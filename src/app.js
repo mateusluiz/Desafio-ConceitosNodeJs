@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 
-// const { v4: uuid, validate: isUuid } = require('uuid');
+const { v4: uuid, validate: isUuid } = require('uuid');
 
 const app = express();
 
@@ -10,24 +10,90 @@ app.use(cors());
 
 const repositories = [];
 
+function validarID(request, response, next){
+  const { id } = request.params;
+  
+  if(!isUuid(id)){
+    return response.status(400).json({ error: "Invalid project ID" })
+  }
+
+  return next()
+}
+
+app.use("/repositories/:id", validarID)
+app.use("/repositories/:id/like", validarID)
+
 app.get("/repositories", (request, response) => {
-  // TODO
+  const { title, url, techs } = request.query
+
+  const results = title ? repositories.filter(filtro => filtro.title.includes(title)) : repositories
+
+  return response.json(results)
 });
 
 app.post("/repositories", (request, response) => {
-  // TODO
+  const { title, url, techs } = request.body
+
+  const objeto = { id: uuid(), title, url, techs, likes: 0 }
+
+  repositories.push(objeto)
+
+  return response.json(objeto)
 });
 
 app.put("/repositories/:id", (request, response) => {
-  // TODO
+  const { id } = request.params
+  const { title, url, techs } = request.body
+
+  const posicao = repositories.findIndex(posicao => posicao.id == id)
+
+  // if(posicao < 0){
+  //   return response.status(400).json({ error: "Invalid project ID" })
+  // }
+
+  const likes = repositories[posicao].likes
+
+  const novoProjeto = {
+    id,
+    title,
+    url,
+    techs,
+    likes
+  }
+
+  repositories[posicao] = novoProjeto
+
+  return response.json(novoProjeto)
+  
 });
 
 app.delete("/repositories/:id", (request, response) => {
-  // TODO
+  const { id } = request.params
+
+  const posicao = repositories.findIndex(posicao => posicao.id == id)
+
+  // if(posicao < 0){
+  //   return response.status(400).json({ error: "Invalid project ID" })
+  // }
+
+  repositories.splice(posicao, 1)
+
+  return response.status(204).send()
 });
 
 app.post("/repositories/:id/like", (request, response) => {
-  // TODO
+  const { id } = request.params
+
+  const posicao = repositories.findIndex(posicao => posicao.id == id)
+
+  // if(posicao < 0){
+  //   return response.status(400).json({ error: "Invalid project ID" })
+  // }
+
+  repositories[posicao].likes = repositories[posicao].likes + 1
+
+  return response.json(repositories[posicao])
+  
 });
 
 module.exports = app;
